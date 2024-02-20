@@ -25,7 +25,7 @@
   "bugs": {
     "url": "https://github.com/danny-avila/LibreChat/issues"
   },
-  "homepage": "https://github.com/danny-avila/LibreChat#readme",
+  "homepage": "https://librechat.ai",
   "dependencies": {
     "@codesandbox/sandpack-react": "^2.12.1",
     "@codesandbox/sandpack-themes": "^2.0.21",
