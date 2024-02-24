@@ -34,5 +34,4 @@ jobs:
 
       - name: Push images to Docker Hub
         run: |
-          docker tag librechat:latest ${{ secrets.DOCKERHUB_USERNAME }}/librechat:latest
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/librechat:latest
