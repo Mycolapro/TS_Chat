@@ -10,6 +10,7 @@ import { useAuthContext } from '~/hooks/AuthContext';
 import useAvatar from '~/hooks/Messages/useAvatar';
 import { ExportModal } from './ExportConversation';
 import { LinkIcon, GearIcon } from '~/components';
+import { UserIcon } from '~/components/svg';
 import { useLocalize } from '~/hooks';
 import Settings from './Settings';
 import NavLink from './NavLink';
@@ -72,7 +73,20 @@ function NavLinks() {
             >
               <div className="-ml-0.9 -mt-0.8 h-8 w-7 flex-shrink-0">
                 <div className="relative flex">
-                  <img className="rounded-full" src={user?.avatar || avatarSrc} alt="" />
+                  {!user?.avatar && !user?.username ? (
+                    <div
+                      style={{
+                        backgroundColor: 'rgb(121, 137, 255)',
+                        width: '28px',
+                        height: '28px',
+                      }}
+                      className="relative flex h-9 w-9 items-center justify-center rounded-full p-1 text-white"
+                    >
+                      <UserIcon />
+                    </div>
+                  ) : (
+                    <img className="rounded-full" src={user?.avatar || avatarSrc} alt="avatar" />
+                  )}
                 </div>
               </div>
               <div
@@ -113,14 +127,16 @@ function NavLinks() {
                     clickHandler={() => setShowFiles(true)}
                   />
                 </Menu.Item>
-                <Menu.Item as="div">
-                  <NavLink
-                    className="flex w-full cursor-pointer items-center gap-3 rounded-none px-3 py-3 text-sm text-white transition-colors duration-200 hover:bg-gray-700"
-                    svg={() => <LinkIcon />}
-                    text={localize('com_nav_help_faq')}
-                    clickHandler={() => window.open('https://librechat.ai', '_blank')}
-                  />
-                </Menu.Item>
+                {startupConfig?.helpAndFaqURL !== '/' && (
+                  <Menu.Item as="div">
+                    <NavLink
+                      className="flex w-full cursor-pointer items-center gap-3 rounded-none px-3 py-3 text-sm text-white transition-colors duration-200 hover:bg-gray-700"
+                      svg={() => <LinkIcon />}
+                      text={localize('com_nav_help_faq')}
+                      clickHandler={() => window.open(startupConfig?.helpAndFaqURL, '_blank')}
+                    />
+                  </Menu.Item>
+                )}
                 <Menu.Item as="div">
                   <NavLink
                     className="flex w-full cursor-pointer items-center gap-3 rounded-none px-3 py-3 text-sm text-white transition-colors duration-200 hover:bg-gray-700"
