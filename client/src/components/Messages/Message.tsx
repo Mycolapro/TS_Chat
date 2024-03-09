@@ -52,6 +52,73 @@ export default function Message(props: TMessageProps) {
     return null;
   }
 
+  const enterEdit = (cancel?: boolean) =>
+    setCurrentEditId && setCurrentEditId(cancel ? -1 : messageId);
+
+  const handleScroll = () => {
+    if (isSubmitting) {
+      setAbortScroll(true);
+    } else {
+      setAbortScroll(false);
+    }
+  };
+
+  const commonClasses =
+    'w-full border-b text-gray-800 group border-black/10 dark:border-gray-800/50 dark:text-gray-200';
+  const uniqueClasses = isCreatedByUser
+    ? 'bg-white dark:bg-gray-800 dark:text-gray-20'
+    : 'bg-gray-50 dark:bg-gray-700 dark:text-gray-100';
+
+  const messageProps = {
+    className: cn(commonClasses, uniqueClasses),
+    titleclass: '',
+  };
+
+  const icon = Icon({
+    ...conversation,
+    ...message,
+    model: message?.model ?? conversation?.model,
+    size: 36,
+  });
+
+  if (message?.bg && searchResult) {
+    messageProps.className = message?.bg?.split('hover')[0];
+    messageProps.titleclass = message?.bg?.split(messageProps.className)[1] + ' cursor-pointer';
+  }
+
+  const regenerateMessage = () => {
+    if (!isSubmitting && !isCreatedByUser) {
+      regenerate(message);
+    }
+  };
+
+  const copyToClipboard = (setIsCopied: React.Dispatch<React.SetStateAction<boolean>>) => {
+    setIsCopied(true);
+    copy(text ?? '');
+
+    setTimeout(() => {
+      setIsCopied(false);
+    }, 3000);
+  };
+
+  const clickSearchResult = async () => {
+    if (!searchResult) {
+      return;
+    }
+    if (!message) {
+      return;
+    }
+    const response = await getConversationQuery.refetch({
+      queryKey: [message?.conversationId],
+    });
+
+    console.log('getConversationQuery response.data:', response.data);
+
+    if (response.data) {
+      switchToConversation(response.data);
+    }
+  };
+
   return (
     <>
       <div

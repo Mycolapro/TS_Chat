@@ -123,7 +123,7 @@ const CodeBlock: React.FC<CodeBlockProps> = ({
 
   return (
     <div className="my-2 w-full rounded-md bg-black text-xs text-white/80">
-      <div className="flex w-full items-center rounded-tl-md rounded-tr-md bg-gray-800 px-4 py-2 font-sans text-xs text-gray-200 dark:bg-gray-900">
+      <div className="flex w-full items-center rounded-tl-md rounded-tr-md bg-gray-700 px-4 py-2 font-sans text-xs text-gray-200 dark:bg-gray-700">
         <span className="">{lang}</span>
         {plugin ? (
           <InfoIcon className="ml-auto flex h-4 w-4 gap-2 text-white/50" />
