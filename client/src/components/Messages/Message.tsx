@@ -7,46 +7,70 @@ import { SubRow, Plugin, MessageContent } from './Content';
 // eslint-disable-next-line import/no-cycle
 import MultiMessage from './MultiMessage';
 import HoverButtons from './HoverButtons';
-import { cn } from '~/utils';
-import React, { useState } from 'react';
-import { BingSuggestionCard } from './Content/BingSuggestions';
-import { SandpackProvider } from '@codesandbox/sandpack-react';
-import { amethyst } from '@codesandbox/sandpack-themes';
-import { useMessageHelpers } from '~/hooks';
 import SiblingSwitch from './SiblingSwitch';
+import { Icon } from '~/components/Endpoints';
+import { useMessageHandler, useConversation } from '~/hooks';
+import type { TMessageProps } from '~/common';
+import { cn } from '~/utils';
+import store from '~/store';
+import { useParams } from 'react-router-dom';
 
 export default function Message(props: TMessageProps) {
-  const [files, setFiles] = useState({});
-  const { message, siblingIdx, siblingCount, setSiblingIdx, currentEditId, setCurrentEditId } =
-    props;
+  const {
+    conversation,
+    message,
+    scrollToBottom,
+    currentEditId,
+    setCurrentEditId,
+    siblingIdx,
+    siblingCount,
+    setSiblingIdx,
+  } = props;
 
-  const [bingSuggestions, setBingSuggestions] = useState<string[]>([]);
+  const setLatestMessage = useSetRecoilState(store.latestMessage);
+  const [abortScroll, setAbortScroll] = useRecoilState(store.abortScroll);
+  const { isSubmitting, ask, regenerate, handleContinue } = useMessageHandler();
+  const { switchToConversation } = useConversation();
+  const { conversationId } = useParams();
+  const isSearching = useRecoilValue(store.isSearching);
 
   const {
-    ask,
-    icon,
-    edit,
-    isLast,
-    enterEdit,
-    handleScroll,
-    conversation,
-    isSubmitting,
-    latestMessage,
-    handleContinue,
-    copyToClipboard,
-    regenerateMessage,
-  } = useMessageHelpers(props);
+    text,
+    children,
+    messageId = null,
+    searchResult,
+    isCreatedByUser,
+    error,
+    unfinished,
+  } = message ?? {};
 
-  const { text, children, messageId = null, isCreatedByUser, error, unfinished } = message ?? {};
+  const isLast = !children?.length;
+  const edit = messageId === currentEditId;
+  const getConversationQuery = useGetConversationByIdQuery(message?.conversationId ?? '', {
+    enabled: false,
+  });
 
-  // bing suggestions
+  const autoScroll = useRecoilValue(store.autoScroll);
+
   useEffect(() => {
-    if (!message || !message.suggestions) {
-      return;
+    if (isSubmitting && scrollToBottom && !abortScroll) {
+      scrollToBottom();
     }
-    setBingSuggestions(message.suggestions);
-    console.log(message.suggestions);
-  }, [message]);
+  }, [isSubmitting, text, scrollToBottom, abortScroll]);
+
+  useEffect(() => {
+    if (scrollToBottom && autoScroll && !isSearching && conversationId !== 'new') {
+      scrollToBottom();
+    }
+  }, [autoScroll, conversationId, scrollToBottom, isSearching]);
+
+  useEffect(() => {
+    if (!message) {
+      return;
+    } else if (isLast) {
+      setLatestMessage({ ...message });
+    }
+  }, [isLast, message, setLatestMessage]);
 
   if (!message) {
     return null;
@@ -121,112 +145,80 @@ export default function Message(props: TMessageProps) {
 
   return (
     <>
-      <div
-        className="text-token-text-primary w-full border-0 bg-transparent dark:border-0 dark:bg-transparent"
-        onWheel={handleScroll}
-        onTouchMove={handleScroll}
-      >
-        <div className="m-auto justify-center p-4 py-2 text-base md:gap-6 ">
-          <div className="} group mx-auto flex flex-1 flex-col gap-3 text-base md:max-w-3xl md:px-5 lg:max-w-[40rem] lg:px-1 xl:max-w-[48rem] xl:px-5">
-            <div
-              className={cn('relative flex w-full flex-col', isCreatedByUser ? '' : 'agent-turn')}
-            >
-              <div className="my-4 flex select-none flex-row items-start gap-3 font-semibold">
-                <div className="relative flex flex-shrink-0 flex-col items-end">
-                  <div>
-                    <div className="pt-0.5">
-                      <div className="gizmo-shadow-stroke flex h-6 w-6 items-center justify-center overflow-hidden rounded-full">
-                        {typeof icon === 'string' && /[^\\x00-\\x7F]+/.test(icon as string) ? (
-                          <span className=" direction-rtl w-40 overflow-x-scroll">{icon}</span>
-                        ) : (
-                          icon
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                {isCreatedByUser ? 'You' : message.sender}
-              </div>
-              <div className="flex-col gap-1 md:gap-3">
-                <div className="flex max-w-full flex-grow flex-col gap-0">
-                  {/* Legacy Plugins */}
-                  {message?.plugin && <Plugin plugin={message?.plugin} />}
-                  <MessageContent
-                    ask={ask}
-                    edit={edit}
-                    isLast={isLast}
-                    text={text ?? ''}
-                    message={message}
-                    enterEdit={enterEdit}
-                    error={!!error}
-                    isSubmitting={isSubmitting}
-                    unfinished={unfinished ?? false}
-                    isCreatedByUser={isCreatedByUser ?? true}
-                    siblingIdx={siblingIdx ?? 0}
-                    setSiblingIdx={
-                      setSiblingIdx ??
-                      (() => {
-                        return;
-                      })
-                    }
-                  />
-                </div>
-              </div>
-              {Object.keys(files).length > 0 && (
-                <SandpackProvider
-                  template="static"
-                  options={{
-                    autoReload: true,
-                    autorun: true,
-                    recompileMode: 'delayed',
-                    recompileDelay: 300,
-                  }}
-                  files={files}
-                  theme={amethyst}
-                ></SandpackProvider>
-              )}
-              {isLast && isSubmitting ? null : (
-                <SubRow classes="text-xs flex-col gap-2 pt-4">
-                  {bingSuggestions.length > 0 && (
-                    <div className="flex w-full flex-col gap-4 md:flex-row">
-                      {bingSuggestions.map((suggestion, index) => (
-                        <BingSuggestionCard
-                          key={index}
-                          suggestion={suggestion}
-                          onClick={() => ask({ text: suggestion })}
-                        />
-                      ))}
-                    </div>
-                  )}
-                  <div className="flex flex-row items-start justify-start gap-2">
-                    <SiblingSwitch
-                      siblingIdx={siblingIdx}
-                      siblingCount={siblingCount}
-                      setSiblingIdx={setSiblingIdx}
-                    />
-                    <HoverButtons
-                      isEditing={edit}
-                      message={message}
-                      enterEdit={enterEdit}
-                      isSubmitting={isSubmitting}
-                      conversation={conversation ?? null}
-                      regenerate={() => regenerateMessage()}
-                      copyToClipboard={copyToClipboard}
-                      handleContinue={handleContinue}
-                      latestMessage={latestMessage}
-                    />
-                  </div>
-                </SubRow>
-              )}
+      <div {...messageProps} onWheel={handleScroll} onTouchMove={handleScroll}>
+        <div className="relative m-auto flex gap-4 p-4 text-base md:max-w-2xl md:gap-6 md:py-6 lg:max-w-2xl lg:px-0 xl:max-w-3xl">
+          <div className="relative flex h-[40px] w-[40px] flex-col items-end text-right text-xs md:text-sm">
+            {typeof icon === 'string' && /[^\\x00-\\x7F]+/.test(icon as string) ? (
+              <span className=" direction-rtl w-40 overflow-x-scroll">{icon}</span>
+            ) : (
+              icon
+            )}
+            <div className="sibling-switch invisible absolute left-0 top-2 -ml-4 flex -translate-x-full items-center justify-center gap-1 text-xs group-hover:visible">
+              <SiblingSwitch
+                siblingIdx={siblingIdx}
+                siblingCount={siblingCount}
+                setSiblingIdx={setSiblingIdx}
+              />
             </div>
+          </div>
+          <div className="relative flex w-[calc(100%-50px)] flex-col gap-1  md:gap-3 lg:w-[calc(100%-115px)]">
+            {searchResult && (
+              <SubRow
+                classes={messageProps.titleclass + ' rounded'}
+                subclasses="switch-result pl-2 pb-2"
+                onClick={clickSearchResult}
+              >
+                <strong>{`${message?.title} | ${message?.sender}`}</strong>
+              </SubRow>
+            )}
+            <div className="flex flex-grow flex-col gap-3">
+              {/* Legacy Plugins */}
+              {message?.plugin && <Plugin plugin={message?.plugin} />}
+              <MessageContent
+                ask={ask}
+                edit={edit}
+                isLast={isLast}
+                text={text ?? ''}
+                message={message}
+                enterEdit={enterEdit}
+                error={!!(error && !searchResult)}
+                isSubmitting={isSubmitting}
+                unfinished={unfinished ?? false}
+                isCreatedByUser={isCreatedByUser ?? true}
+                siblingIdx={siblingIdx ?? 0}
+                setSiblingIdx={
+                  setSiblingIdx ??
+                  (() => {
+                    return;
+                  })
+                }
+              />
+            </div>
+            <HoverButtons
+              isEditing={edit}
+              isSubmitting={isSubmitting}
+              message={message}
+              conversation={conversation ?? null}
+              enterEdit={enterEdit}
+              regenerate={() => regenerateMessage()}
+              handleContinue={handleContinue}
+              copyToClipboard={copyToClipboard}
+            />
+            <SubRow subclasses="switch-container">
+              <SiblingSwitch
+                siblingIdx={siblingIdx}
+                siblingCount={siblingCount}
+                setSiblingIdx={setSiblingIdx}
+              />
+            </SubRow>
           </div>
         </div>
       </div>
       <MultiMessage
-        key={messageId}
         messageId={messageId}
         conversation={conversation}
         messagesTree={children ?? []}
+        scrollToBottom={scrollToBottom}
         currentEditId={currentEditId}
         setCurrentEditId={setCurrentEditId}
       />
