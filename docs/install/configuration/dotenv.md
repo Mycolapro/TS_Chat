@@ -76,6 +76,14 @@ NO_INDEX=true
 
 > ❗**Note:** This method is not guaranteed to work for all search engines, and some search engines may still index your website or web page for other purposes, such as caching or archiving. Therefore, you should not rely solely on this method to protect sensitive or confidential information on your website or web page.
 
+### JSON Logging
+
+When handling console logs in cloud deployments (such as GCP or AWS), enabling this will duump the logs with a UTC timestamp and format them as JSON. See: [feat: Add CONSOLE_JSON](https://github.com/danny-avila/LibreChat/pull/2146)
+
+```
+CONSOLE_JSON=false
+```
+
 ### Logging
 
 LibreChat has built-in central logging, see [Logging System](../../features/logging_system.md) for more info.
@@ -86,14 +94,25 @@ LibreChat has built-in central logging, see [Logging System](../../features/logg
 - Keep debug logs active by default or disable them by setting `DEBUG_LOGGING=false` in the environment variable.
 - For more information about this feature, read our docs: **[Logging System](../../features/logging_system.md)**
 
+- Enable verbose file logs with `DEBUG_LOGGING=TRUE`.
+- Note: can be used with either `DEBUG_CONSOLE` or `CONSOLE_JSON` but not both.
+
 ```bash
 DEBUG_LOGGING=true
 ```
 
-- Enable verbose server output in the console with `DEBUG_CONSOLE=TRUE`, though it's not recommended due to high verbosity.
+- Enable verbose console/stdout logs with `DEBUG_CONSOLE=TRUE` in the same format as file debug logs.
+- Note: can be used in conjunction with `DEBUG_LOGGING` but not `CONSOLE_JSON`.
 
 ```bash
 DEBUG_CONSOLE=false
+```
+
+- Enable verbose JSON console/stdout logs suitable for cloud deployments like GCP/AWS
+- Note: can be used in conjunction with `DEBUG_LOGGING` but not `DEBUG_CONSOLE`.
+
+```bash
+CONSOLE_JSON=false
 ```
 
 This is not recommend, however, as the outputs can be quite verbose, and so it's disabled by default.
@@ -267,28 +286,6 @@ Bing, also used for Sydney, jailbreak, and Bing Image Creator, see: [Bing Access
 BINGAI_TOKEN=user_provided
 BINGAI_HOST=
 ```
-
-<!-- ### ChatGPT
-see: [ChatGPT Free Access token](../configuration/ai_setup.md#chatgptbrowser)
-
-> **Warning**: To use this endpoint you'll have to set up your own reverse proxy.
-
-```bash
-CHATGPT_REVERSE_PROXY=<YOUR-REVERSE-PROXY>
-```
-
-> **Note:** If you're a GPT plus user you can try adding `gpt-4`, `gpt-4-plugins`, `gpt-4-code-interpreter`, and `gpt-4-browsing` to the list above and use the models for these features; **however, the view/display portion of these features are not supported**, but you can use the underlying models, which have higher token context
-
-> This method **might only works** with `text-davinci-002-render-sha` and **might stop working** at any moment.
-
-- Leave `CHATGPT_TOKEN=` blank to disable this endpoint
-- Set `CHATGPT_TOKEN=` to "user_provided" to allow users to provide their own API key from the WebUI
-    - It is not recommended to provide your token in the `.env` file since it expires often and sharing it could get you banned.
-
-```bash
-CHATGPT_TOKEN=
-CHATGPT_MODELS=text-davinci-002-render-sha
-``` -->
 
 ### Google
 Follow these instructions to setup the [Google Endpoint](./ai_setup.md#google)
